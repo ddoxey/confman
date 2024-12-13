@@ -13,6 +13,12 @@ class Config:
         self.file_type = self._detect_file_type()
         self.comments = {}
 
+    def get_filename(self):
+        """
+        Return the file path of the configuration file.
+        """
+        return self.file_path
+
     def _detect_file_type(self) -> str:
         """
         Detect the file type (JSON or YAML) based on the file extension.
@@ -63,6 +69,12 @@ class Config:
             final_content = self._restore_comments(yaml_content)
             with open(self.file_path, "w") as file:
                 file.write(final_content)
+
+    def get_comments(self):
+        """
+        Return a copy of the comments parsed from the configuration.
+        """
+        return self.comments.copy()
 
     def _extract_comments(self, raw_lines):
         """
