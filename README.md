@@ -9,3 +9,6 @@ settings directly.
 
 The Configuration Manager is driven by the ```config_manager.yaml``` configuration
 file. This drives which files are loaded for review and modification.
+
+### Sample
+![Screen Grab](config_manager.png)
