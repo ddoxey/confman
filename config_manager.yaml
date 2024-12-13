@@ -1,0 +1,7 @@
+# JSON Configuration File
+json_config: "conf/data.json"
+
+# YAML Configuration File
+yaml_config: "conf/data.yaml"
+
+biographic_config: "conf/biographic_data.json"

@@ -1,0 +1,241 @@
+{
+    "Personal Data": {
+        "name": "John Doe",
+        "age": "30"
+    },
+    "Contact Information": {
+        "occupation": "Paper Boy",
+        "email": "john.doe@example.com",
+        "phone": "(555) 619-1212"
+    },
+    "Work History": [
+        {
+            "employer_name": "Apple Inc.",
+            "year": "1966"
+        },
+        {
+            "employer_name": "Microsoft Corp.",
+            "year": "1967"
+        },
+        {
+            "employer_name": "Tesla Inc.",
+            "year": "1968"
+        },
+        {
+            "employer_name": "Amazon.com Inc.",
+            "year": "1969"
+        },
+        {
+            "employer_name": "Alphabet Inc.",
+            "year": "1970"
+        },
+        {
+            "employer_name": "NVIDIA Corp.",
+            "year": "1971"
+        },
+        {
+            "employer_name": "Meta Platforms Inc.",
+            "year": "1972"
+        },
+        {
+            "employer_name": "Intel Corp.",
+            "year": "1973"
+        },
+        {
+            "employer_name": "Cisco Systems Inc.",
+            "year": "1974"
+        },
+        {
+            "employer_name": "PepsiCo Inc.",
+            "year": "1975"
+        },
+        {
+            "employer_name": "Coca-Cola Co.",
+            "year": "1976"
+        },
+        {
+            "employer_name": "Pfizer Inc.",
+            "year": "1977"
+        },
+        {
+            "employer_name": "Procter & Gamble Co.",
+            "year": "1978"
+        },
+        {
+            "employer_name": "Johnson & Johnson",
+            "year": "1979"
+        },
+        {
+            "employer_name": "Walt Disney Co.",
+            "year": "1980"
+        },
+        {
+            "employer_name": "Boeing Co.",
+            "year": "1981"
+        },
+        {
+            "employer_name": "Exxon Mobil Corp.",
+            "year": "1982"
+        },
+        {
+            "employer_name": "Chevron Corp.",
+            "year": "1983"
+        },
+        {
+            "employer_name": "IBM Corp.",
+            "year": "1984"
+        },
+        {
+            "employer_name": "Netflix Inc.",
+            "year": "1985"
+        },
+        {
+            "employer_name": "AT&T Inc.",
+            "year": "1986"
+        },
+        {
+            "employer_name": "Verizon Communications",
+            "year": "1987"
+        },
+        {
+            "employer_name": "Oracle Corp.",
+            "year": "1988"
+        },
+        {
+            "employer_name": "Goldman Sachs Group",
+            "year": "1989"
+        },
+        {
+            "employer_name": "JPMorgan Chase & Co.",
+            "year": "1990"
+        },
+        {
+            "employer_name": "Wells Fargo & Co.",
+            "year": "1991"
+        },
+        {
+            "employer_name": "Bank of America Corp.",
+            "year": "1992"
+        },
+        {
+            "employer_name": "Citigroup Inc.",
+            "year": "1993"
+        },
+        {
+            "employer_name": "Ford Motor Co.",
+            "year": "1994"
+        },
+        {
+            "employer_name": "General Motors Co.",
+            "year": "1995"
+        },
+        {
+            "employer_name": "Starbucks Corp.",
+            "year": "1996"
+        },
+        {
+            "employer_name": "American Airlines Group",
+            "year": "1997"
+        },
+        {
+            "employer_name": "Delta Air Lines Inc.",
+            "year": "1998"
+        },
+        {
+            "employer_name": "Southwest Airlines Co.",
+            "year": "1999"
+        },
+        {
+            "employer_name": "Carnival Corp.",
+            "year": "2000"
+        },
+        {
+            "employer_name": "Marriott International",
+            "year": "2001"
+        },
+        {
+            "employer_name": "Hilton Worldwide Holdings",
+            "year": "2002"
+        },
+        {
+            "employer_name": "Uber Technologies Inc.",
+            "year": "2003"
+        },
+        {
+            "employer_name": "Lyft Inc.",
+            "year": "2004"
+        },
+        {
+            "employer_name": "Airbnb Inc.",
+            "year": "2005"
+        },
+        {
+            "employer_name": "Zoom Video Communications",
+            "year": "2006"
+        },
+        {
+            "employer_name": "Dropbox Inc.",
+            "year": "2007"
+        },
+        {
+            "employer_name": "eBay Inc.",
+            "year": "2008"
+        },
+        {
+            "employer_name": "PayPal Holdings Inc.",
+            "year": "2009"
+        },
+        {
+            "employer_name": "Square Inc.",
+            "year": "2010"
+        },
+        {
+            "employer_name": "Robinhood Markets Inc.",
+            "year": "2011"
+        },
+        {
+            "employer_name": "Snap Inc.",
+            "year": "2012"
+        },
+        {
+            "employer_name": "Twitter Inc.",
+            "year": "2013"
+        },
+        {
+            "employer_name": "Pinterest Inc.",
+            "year": "2014"
+        },
+        {
+            "employer_name": "Etsy Inc.",
+            "year": "2015"
+        },
+        {
+            "employer_name": "Shopify Inc.",
+            "year": "2016"
+        },
+        {
+            "employer_name": "Adobe Inc.",
+            "year": "2017"
+        },
+        {
+            "employer_name": "Salesforce Inc.",
+            "year": "2018"
+        },
+        {
+            "employer_name": "ServiceNow Inc.",
+            "year": "2019"
+        },
+        {
+            "employer_name": "Workday Inc.",
+            "year": "2020"
+        },
+        {
+            "employer_name": "Intuit Inc.",
+            "year": "2021"
+        },
+        {
+            "employer_name": "Stripe Inc.",
+            "year": "2022"
+        }
+    ]
+}

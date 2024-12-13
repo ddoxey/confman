@@ -1,0 +1,1 @@
+PyYAML==5.4.1  # For YAML parsing and writing (matches CentOS 8's version)
