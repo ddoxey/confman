@@ -76,6 +76,12 @@ class Config:
         """
         return self.comments.copy()
 
+    def get_comment(self, name):
+        """
+        Return the requested comment or empty string if it doesn't exist. 
+        """
+        return self.comments.get(name, "")
+
     def _extract_comments(self, raw_lines):
         """
         Extract comments from YAML lines and store them, including multi-line and inline comments.
