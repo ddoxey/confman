@@ -1,4 +1,5 @@
 .*.swp
+tests/sample_*
 archive/*
 
 # Byte-compiled / optimized / DLL files
