@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
+#!/usr/bin/env python3
 import os
 import subprocess
 
-# C source template
+# Updated C source template for parent process
 C_TEMPLATE_PARENT = """
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-
-void spawn_child(const char *child_name) {{
-    if (fork() == 0) {{
-        execlp(child_name, child_name, NULL);
-        perror("execlp failed");
-        exit(1);
-    }}
-}}
 
 int main() {{
     {child_processes}
@@ -95,6 +88,7 @@ def main():
         name = sample["name"]
         message = sample["message"]
         is_parent = sample["children"]
+        path = os.path.dirname(os.path.realpath(__file__))
 
         # If odd-numbered process, generate child processes
         child_processes = ""
@@ -105,7 +99,7 @@ def main():
                 child_source_file = create_source_file(child_name, child_message, is_parent=False)
                 child_output_file = os.path.join(OUTPUT_DIR, child_name)
                 compile_source_file(child_source_file, child_output_file)
-                child_processes += f'spawn_child("{child_output_file}");\n    '
+                child_processes += f'system("{path}/{child_name} &");\n    '
 
         # Create the parent source file
         source_file = create_source_file(name, message, is_parent=True, child_processes=child_processes)
