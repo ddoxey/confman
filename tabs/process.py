@@ -2,6 +2,7 @@ import gi
 
 gi.require_version("Gtk", "3.0")
 
+from gi.repository import GLib
 from gi.repository import Gtk
 from control import Control
 
@@ -11,6 +12,7 @@ class ProcessesTab(Gtk.Box):
     Tab for managing processes listed in config_manager.yaml.
     Provides start, stop, and status widgets for each process.
     """
+    UPDATE_INTERVAL = 1000  # Update every 1000 ms (1 second)
 
     def __init__(self, processes):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -19,37 +21,37 @@ class ProcessesTab(Gtk.Box):
         self.set_margin_top(20)
         self.set_margin_bottom(20)
 
+        # Store references to controls and their indicators
+        self.controls = []
+
         # Create widgets for each process
         for process in processes:
-            self.add_process_widget(process)
+            self.add_process_widget(Control(process))
 
-    def add_process_widget(self, process_data):
+        # Set up periodic updates for process statuses
+        GLib.timeout_add(self.UPDATE_INTERVAL, self.update_status_indicators)
+
+    def add_process_widget(self, control):
         """
         Add widgets for managing a single process.
-        :param process_data: Dictionary containing 'bin', 'children', and 'cwd'.
+        :param control: Instance of Control
         """
-        frame = Gtk.Frame(label=process_data['bin'])
+        frame = Gtk.Frame(label=control.get_name())
         frame.set_margin_top(10)
         frame.set_margin_bottom(10)
 
         # Box for the process controls
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
 
-        bin_name = process_data.get("bin", "Unknown")
-        cwd = process_data.get("cwd", None)
-
-        # Process control instance
-        control = Control(bin_name, cwd)
-
         # Status indicator
         status_indicator = Gtk.DrawingArea()
         status_indicator.set_size_request(20, 20)  # Square size
         status_indicator.set_tooltip_text("Process status indicator")
-        status_indicator.connect("draw", self.draw_status_indicator, process_data)
+        status_indicator.connect("draw", self.draw_status_indicator, control)
         hbox.pack_start(status_indicator, expand=False, fill=True, padding=10)
 
         # Label for the process binary
-        label = Gtk.Label(label=f"Process: {bin_name}", xalign=0)
+        label = Gtk.Label(label=f"Process: {control.get_name()}", xalign=0)
         hbox.pack_start(label, expand=True, fill=True, padding=0)
 
         # Start button
@@ -65,58 +67,52 @@ class ProcessesTab(Gtk.Box):
         # Add the process controls to the tab
         self.pack_start(hbox, expand=False, fill=True, padding=10)
 
-    def draw_status_indicator(self, widget, cr, process):
+        # Store the control and associated status indicator
+        self.controls.append((control, status_indicator))
+
+    def draw_status_indicator(self, widget, cr, control):
         """
         Draw the status indicator as a colored square.
         Green = Running, Yellow = Unsure, Red = Stopped.
         """
-        status = self.get_process_status(process)
+        status = control.get_status()
+
+        print(f'control({control.get_name()} status: {status}')
 
         # Set color based on status
-        if status == "running":
+        if status == Control.RUNNING:
             cr.set_source_rgb(0, 1, 0)  # Green
-        elif status == "jeopardy":
+        elif status == Control.JEOPARDY:
             cr.set_source_rgb(1, 1, 0)  # Yellow
         else:
             cr.set_source_rgb(1, 0, 0)  # Red
 
-        # Draw filled square
-        cr.rectangle(1, 1, 18, 18)  # Slightly smaller to account for border
+        cr.rectangle(1, 1, 18, 18)  # Fill indicator
         cr.fill()
-
-        # Set border color (black) and line width
-        cr.set_source_rgb(0, 0, 0)  # Black
+        cr.set_source_rgb(0, 0, 0)  # Black border
         cr.set_line_width(1)
-
-        # Draw border
-        cr.rectangle(0.5, 0.5, 19, 19)  # Coordinates for 1-pixel border
+        cr.rectangle(0.5, 0.5, 19, 19)  # 1-pixel border
         cr.stroke()
 
-    def get_process_status(self, process):
+    def update_status_indicators(self):
         """
-        Determine the status of the process.
-        This is a placeholder; implement real logic here.
+        Periodically update the status indicators for all processes.
         """
-        # TODO: Replace with real status check
-        return "unsure"  # Placeholder: Return "running", "stopped"
+        for control, indicator in self.controls:
+            # Trigger a redraw of the status indicator
+            indicator.queue_draw()
+
+        # Return True to keep the timeout active
+        return True
 
     def on_start_clicked(self, button, control):
         """
         Start the process.
         """
-        message = control.start()
-        print(message)
+        return control.start()
 
     def on_stop_clicked(self, button, control):
         """
         Stop the process.
         """
-        message = control.stop()
-        print(message)
-
-    def on_status_clicked(self, button, control):
-        """
-        Check the status of the process.
-        """
-        status = "running" if control.is_running() else "stopped"
-        print(f"Process {control.bin_name} is {status}.")
+        return control.stop()
