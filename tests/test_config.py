@@ -1,6 +1,7 @@
 """
 Tests for the Config class.
 """
+import os
 import json
 import unittest
 from config import Config  # Updated to reflect the renamed file
@@ -26,7 +27,7 @@ class TestConfig(unittest.TestCase):
 
         # Sample YAML data with multi-line comments
         self.yaml_data = """
-# This is a multi-line comment
+# A multi-line comment
 # for the user's full name
 name: John Doe
 
@@ -43,8 +44,8 @@ email: john.doe@example.com  # The user's email address
         """
         Keep the files for debugging purposes (no deletion).
         """
-        print(f"JSON file: {self.json_file}")
-        print(f"YAML file: {self.yaml_file}")
+        os.remove(self.json_file)
+        os.remove(self.yaml_file)
 
     def test_json_read(self):
         """
