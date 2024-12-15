@@ -1,3 +1,6 @@
+"""
+Tests for the Control process controller class.
+"""
 import os
 import unittest
 from time import sleep
@@ -6,7 +9,11 @@ from control import Control
 # Path to the directory containing the sample executables
 BIN_DIR = "tests"
 
+
 class TestControl(unittest.TestCase):
+    """
+    Demonstrate and test features of the Control process controller class.
+    """
     def setUp(self):
         """
         Set up the test environment.
@@ -20,10 +27,11 @@ class TestControl(unittest.TestCase):
         ]
         # Ensure all processes exist
         for process in self.sample_processes:
-            full_path = os.path.realpath(os.path.join(process['cwd'], process['ex_name']))
+            full_path = os.path.realpath(os.path.join(process['cwd'],
+                                         process['ex_name']))
             self.assertTrue(
                 os.path.exists(full_path) and os.access(full_path, os.X_OK),
-                f"Executable {process['ex_name']} is missing or not executable."
+                f"Executable {process['ex_name']} missing or not executable."
             )
 
     def test_properties_name(self):
@@ -111,10 +119,10 @@ class TestControl(unittest.TestCase):
                                 f"{control.get_name()} failed to start.")
             sleep(1)  # Allow time to spawn children
             self.assertEqual(control.get_status(), Control.RUNNING,
-                             f"{control.get_name()} is not running after start.")
+                             f"{control.get_name()} not running.")
             control.stop()
             self.assertEqual(control.get_status(), Control.STOPPED,
-                             f"{control.get_name()} is running after stop.")
+                             f"{control.get_name()} running.")
 
     def test_start_stop_multiple(self):
         """
@@ -127,15 +135,15 @@ class TestControl(unittest.TestCase):
                                 f"a) {control_a.get_name()} failed to start.")
             sleep(1)  # Allow time to spawn children
             self.assertEqual(control_a.get_status(), Control.RUNNING,
-                             f"a) {control_a.get_name()} is not running after start.")
+                             f"a) {control_a.get_name()} not running.")
             control_b = Control(process)
             self.assertEqual(control_b.get_status(), Control.RUNNING,
-                             f"b) {control_b.get_name()} is not running after start.")
+                             f"b) {control_b.get_name()} not running.")
             control_b.stop()
             self.assertEqual(control_b.get_status(), Control.STOPPED,
-                             f"b) {control_b.get_name()} is running after stop.")
+                             f"b) {control_b.get_name()} running.")
             self.assertEqual(control_a.get_status(), Control.STOPPED,
-                             f"a) {control_a.get_name()} is running after stop.")
+                             f"a) {control_a.get_name()} running.")
 
     def test_restart(self):
         """
@@ -148,9 +156,11 @@ class TestControl(unittest.TestCase):
             control.stop()
             sleep(1)  # Allow process to terminate
             status = control.start()
-            self.assertNotEqual(status, Control.STOPPED, f"{control.get_name()} failed to restart.")
+            self.assertNotEqual(status, Control.STOPPED,
+                                f"{control.get_name()} failed to restart.")
             sleep(1)
-            self.assertEqual(control.get_status(), Control.RUNNING, f"{control.get_name()} is not running after restart.")
+            self.assertEqual(control.get_status(), Control.RUNNING,
+                             f"{control.get_name()} not running.")
 
     def tearDown(self):
         """
@@ -160,6 +170,7 @@ class TestControl(unittest.TestCase):
             control = Control(process)
             if control.get_status() == Control.RUNNING:
                 control.stop()
+
 
 if __name__ == "__main__":
     unittest.main()

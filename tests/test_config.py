@@ -1,9 +1,15 @@
-import unittest
-import os
+"""
+Tests for the Config class.
+"""
 import json
+import unittest
 from config import Config  # Updated to reflect the renamed file
 
+
 class TestConfig(unittest.TestCase):
+    """
+    Tests demonstrate the features of the Config class.
+    """
     def setUp(self):
         """
         Create temporary JSON and YAML files for testing in /tmp.
@@ -12,9 +18,11 @@ class TestConfig(unittest.TestCase):
         self.yaml_file = "/tmp/test_config.yaml"
 
         # Sample JSON data
-        self.json_data = {"name": "John Doe", "age": "30", "email": "john.doe@example.com"}
-        with open(self.json_file, "w") as f:
-            json.dump(self.json_data, f, indent=4)
+        self.json_data = {"name": "John Doe",
+                          "age": "30",
+                          "email": "john.doe@example.com"}
+        with open(self.json_file, "w", encoding='UTF-8') as file_h:
+            json.dump(self.json_data, file_h, indent=4)
 
         # Sample YAML data with multi-line comments
         self.yaml_data = """
@@ -28,8 +36,8 @@ age: '30'
 
 email: john.doe@example.com  # The user's email address
         """
-        with open(self.yaml_file, "w") as f:
-            f.write(self.yaml_data)
+        with open(self.yaml_file, "w", encoding='UTF-8') as file_h:
+            file_h.write(self.yaml_data)
 
     def tearDown(self):
         """
@@ -51,12 +59,14 @@ email: john.doe@example.com  # The user's email address
         Test writing to a JSON file.
         """
         config = Config(self.json_file)
-        updated_data = {"name": "Jane Doe", "age": "25", "email": "jane.doe@example.com"}
+        updated_data = {"name": "Jane Doe",
+                        "age": "25",
+                        "email": "jane.doe@example.com"}
         config.write(updated_data)
 
         # Verify the file contents
-        with open(self.json_file, "r") as f:
-            data = json.load(f)
+        with open(self.json_file, "r", encoding='UTF-8') as file_h:
+            data = json.load(file_h)
         self.assertEqual(data, updated_data)
 
     def test_yaml_read_with_comments(self):
@@ -72,13 +82,16 @@ email: john.doe@example.com  # The user's email address
         self.assertEqual(data["email"], "john.doe@example.com")
 
         # Verify extracted comments
-        self.assertEqual(config.comments["name"], "This is a multi-line comment\nfor the user's full name")
-        self.assertEqual(config.comments["age"], "Another multi-line\ncomment for age")
-        self.assertEqual(config.comments["email"], "The user's email address")
+        self.assertEqual(config.comments["name"],
+                         "A multi-line comment\nfor the user's full name")
+        self.assertEqual(config.comments["age"],
+                         "Another multi-line\ncomment for age")
+        self.assertEqual(config.comments["email"],
+                         "The user's email address")
 
     def test_yaml_write_with_comments(self):
         """
-        Test writing to a YAML file with comments, including multi-line comments.
+        Test writing a YAML file with comments, including multi-line comments.
         """
         config = Config(self.yaml_file)
         data = config.read()
@@ -92,11 +105,11 @@ email: john.doe@example.com  # The user's email address
         config.write(data)
 
         # Reload the file and verify
-        with open(self.yaml_file, "r") as f:
-            lines = f.readlines()
+        with open(self.yaml_file, "r", encoding='UTF-8') as file_h:
+            lines = file_h.readlines()
         # Verify multi-line comments are restored correctly
         expected_output = """
-# This is a multi-line comment
+# A multi-line comment
 # for the user's full name
 name: John Doe
 

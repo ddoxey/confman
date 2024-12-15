@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+This program generates some compiled binary programs that run
+and in some cases spawn child processes.  It's handy for testing
+the process Control class.
+"""
 import os
 import subprocess
 
@@ -52,12 +57,23 @@ os.makedirs(SOURCE_DIR, exist_ok=True)
 
 # Define sample programs
 SAMPLES = [
-    {"name": "sample_one", "message": "Sample One Running...", "children": True},
-    {"name": "sample_two", "message": "Sample Two Running...", "children": False},
-    {"name": "sample_three", "message": "Sample Three Running...", "children": True},
-    {"name": "sample_four", "message": "Sample Four Running...", "children": False},
-    {"name": "sample_five", "message": "Sample Five Running...", "children": True},
+    {"name": "sample_one",
+     "message": "Sample One Running...",
+     "children": True},
+    {"name": "sample_two",
+     "message": "Sample Two Running...",
+     "children": False},
+    {"name": "sample_three",
+     "message": "Sample Three Running...",
+     "children": True},
+    {"name": "sample_four",
+     "message": "Sample Four Running...",
+     "children": False},
+    {"name": "sample_five",
+     "message": "Sample Five Running...",
+     "children": True},
 ]
+
 
 def create_source_file(name, message, is_parent, child_processes=""):
     """Create a C source file for the given sample."""
@@ -70,9 +86,10 @@ def create_source_file(name, message, is_parent, child_processes=""):
         source_code = C_TEMPLATE_CHILD.format(message=message)
 
     source_file = os.path.join(SOURCE_DIR, f"{name}.c")
-    with open(source_file, "w") as f:
-        f.write(source_code)
+    with open(source_file, "w", encoding='UTF-8') as file_h:
+        file_h.write(source_code)
     return source_file
+
 
 def compile_source_file(source_file, output_file):
     """Compile the C source file into an executable."""
@@ -82,8 +99,9 @@ def compile_source_file(source_file, output_file):
             check=True
         )
         print(f"Compiled {output_file}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error compiling {source_file}: {e}")
+    except subprocess.CalledProcessError as cpe:
+        print(f"Error compiling {source_file}: {cpe}")
+
 
 def clean_up_source_files():
     """Delete all C source files after compilation."""
@@ -93,12 +111,13 @@ def clean_up_source_files():
     os.rmdir(SOURCE_DIR)
     print("Source files cleaned up.")
 
+
 def main():
     for sample in SAMPLES:
         name = sample["name"]
         message = sample["message"]
         is_parent = sample["children"]
-        tests_dir = os.path.dirname(os.path.realpath(__file__))
+        tdir = os.path.dirname(os.path.realpath(__file__))
 
         # If the sample has children, generate them using fork/exec
         child_processes = ""
@@ -106,18 +125,24 @@ def main():
             for i in range(1, 4):
                 child_name = f"{name}.{i}"
                 child_message = f"{child_name} Running..."
-                child_source_file = create_source_file(child_name, child_message, is_parent=False)
+                child_source_file = create_source_file(child_name,
+                                                       child_message,
+                                                       is_parent=False)
                 child_output_file = os.path.join(OUTPUT_DIR, child_name)
                 compile_source_file(child_source_file, child_output_file)
-                child_processes += f'spawn_child("{tests_dir}/{child_name}");\n    '
+                child_processes += f'spawn_child("{tdir}/{child_name}");\n    '
 
         # Create the parent source file
-        source_file = create_source_file(name, message, is_parent=True, child_processes=child_processes)
+        source_file = create_source_file(name,
+                                         message,
+                                         is_parent=True,
+                                         child_processes=child_processes)
         output_file = os.path.join(OUTPUT_DIR, name)
         compile_source_file(source_file, output_file)
 
     # Clean up source files
     clean_up_source_files()
+
 
 if __name__ == "__main__":
     main()

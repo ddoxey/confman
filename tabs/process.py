@@ -1,3 +1,6 @@
+"""
+The ProcessesTab renders the process management tab.
+"""
 import gi
 
 gi.require_version("Gtk", "3.0")
@@ -98,7 +101,7 @@ class ProcessesTab(Gtk.Box):
         """
         Periodically update the status indicators for all processes.
         """
-        for control, indicator in self.controls:
+        for _, indicator in self.controls:
             # Trigger a redraw of the status indicator
             indicator.queue_draw()
 

@@ -1,9 +1,12 @@
+"""
+The ConfigTab class renders the configuration tab.
+"""
 import gi
 
 gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
-from control import Control
+
 
 class ConfigTab(Gtk.Box):
     """
@@ -20,15 +23,17 @@ class ConfigTab(Gtk.Box):
 
         self.config = config_instance
         self.data = self.config.read()
-        self.comments = self.config.get_comments()  # Retrieve comments from the Config instance
+        self.comments = self.config.get_comments()
 
         # Create a scrollable container for dynamic fields
         scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC,
+                                   Gtk.PolicyType.AUTOMATIC)
         scrolled_window.set_min_content_height(400)
 
         # Main container for dynamic fields
-        self.entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                                 spacing=10)
         scrolled_window.add(self.entry_box)
         self.pack_start(scrolled_window, expand=True, fill=True, padding=0)
 
@@ -63,7 +68,8 @@ class ConfigTab(Gtk.Box):
         nested_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
         for sub_key, sub_value in value.items():
-            self.add_config_field_to_container(nested_box, f"{key}.{sub_key}", sub_value)
+            self.add_field_to_container(nested_box,
+                                        f"{key}.{sub_key}", sub_value)
 
         expander.add(nested_box)
         self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
@@ -80,14 +86,21 @@ class ConfigTab(Gtk.Box):
                 item_expander = Gtk.Expander(label=f"{key.title()} Entry {idx + 1}")
                 item_expander.set_expanded(True)
 
-                item_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+                item_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                                   spacing=6)
                 for sub_key, sub_value in item.items():
-                    self.add_config_field_to_container(item_box, f"{key}[{idx}].{sub_key}", sub_value)
+                    self.add_field_to_container(item_box,
+                                                f"{key}[{idx}].{sub_key}",
+                                                sub_value)
 
                 item_expander.add(item_box)
-                list_box.pack_start(item_expander, expand=False, fill=True, padding=0)
+                list_box.pack_start(item_expander,
+                                    expand=False,
+                                    fill=True,
+                                    padding=0)
             else:
-                self.add_config_field_to_container(list_box, f"{key}[{idx}]", item)
+                self.add_field_to_container(list_box,
+                                            f"{key}[{idx}]", item)
 
         expander.add(list_box)
         self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
@@ -96,9 +109,9 @@ class ConfigTab(Gtk.Box):
         """
         Add a single input field for scalar values.
         """
-        self.add_config_field_to_container(self.entry_box, key, value)
+        self.add_field_to_container(self.entry_box, key, value)
 
-    def add_config_field_to_container(self, container, key, value):
+    def add_field_to_container(self, container, key, value):
         """
         Helper function to add fields to a specific container.
         """
@@ -113,7 +126,8 @@ class ConfigTab(Gtk.Box):
 
         # Add input field
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        label = Gtk.Label(label=key.split(".")[-1].replace("_", " ").title(), xalign=0)
+        label = Gtk.Label(label=key.split(".")[-1].replace("_", " ").title(),
+                          xalign=0)
         entry = Gtk.Entry()
         entry.set_text(str(value))
         hbox.pack_start(label, expand=False, fill=True, padding=0)
