@@ -27,7 +27,6 @@ def stop_program(program_name):
         result = subprocess.run(
             ['pgrep', '-f', program_name],
             stdout=subprocess.PIPE,
-            text=True,
             check=True
         )
         # Extract PIDs from the output

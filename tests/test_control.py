@@ -43,7 +43,7 @@ class TestControl(unittest.TestCase):
             'name': proc['name'],
             'ex_name': proc['name'],
             'ps_name': proc['name'],
-            'cmd': [],
+            'start_cmd': [proc['name']],
             'cwd': None,
             'children': []
         }
@@ -61,7 +61,7 @@ class TestControl(unittest.TestCase):
             'name': proc['cmd'][0],
             'ex_name': proc['cmd'][0],
             'ps_name': proc['cmd'][0],
-            'cmd': proc['cmd'][1:],
+            'start_cmd': proc['cmd'],
             'cwd': None,
             'children': []
         }
@@ -79,7 +79,7 @@ class TestControl(unittest.TestCase):
             'name': proc['ex_name'],
             'ex_name': proc['ex_name'],
             'ps_name': proc['ex_name'],
-            'cmd': [],
+            'start_cmd': ['ls'],
             'cwd': 'tests',
             'children': []
         }
@@ -99,7 +99,7 @@ class TestControl(unittest.TestCase):
             'name': proc['ex_name'],
             'ex_name': f"./{proc['ex_name']}",
             'ps_name': proc['ex_name'],
-            'cmd': [],
+            'start_cmd': [f"./{proc['ex_name']}"],
             'cwd': 'tests',
             'children': proc['children']
         }
@@ -161,6 +161,53 @@ class TestControl(unittest.TestCase):
             sleep(1)
             self.assertEqual(control.get_status(), Control.RUNNING,
                              f"{control.get_name()} not running.")
+
+    def test_start_cmd_stop_cmd_properties(self):
+        """
+        Test the start_cmd and stop_cmd work as expected.
+        """
+        proc = {
+            'name': 'Sample Three',
+            'start_cmd': ['runner.py', 'sample_three', 'start'],
+            'stop_cmd': ['runner.py', 'sample_three', 'stop'],
+            'ps_name': 'sample_three',
+            'children': ['sample_three.1', 'sample_three.2', 'sample_three.3'],
+            'cwd': 'tests'}
+        expect = {
+            'name': proc['name'],
+            'ex_name': './runner.py',
+            'ps_name': proc['ps_name'],
+            'start_cmd': ['./runner.py', 'sample_three', 'start'],
+            'stop_cmd': ['./runner.py', 'sample_three', 'stop'],
+            'children': proc['children'],
+            'cwd': proc['cwd']
+        }
+        control = Control(proc)
+        for attr, val in expect.items():
+            self.assertEqual(control.get(attr), val,
+                             f'Failed to set correct {attr} value')
+
+    def test_start_stop_commands(self):
+        """
+        Test the start_cmd and stop_cmd work as expected.
+        """
+        proc = {
+            'name': 'Sample Three',
+            'start_cmd': ['runner.py', 'sample_three', 'start'],
+            'stop_cmd': ['runner.py', 'sample_three', 'stop'],
+            'ps_name': 'sample_three',
+            'children': ['sample_three.1', 'sample_three.2', 'sample_three.3'],
+            'cwd': 'tests'}
+        control = Control(proc)
+        status = control.start()
+        self.assertNotEqual(status, Control.STOPPED,
+                            f"{control.get_name()} failed to start.")
+        sleep(1)  # Allow time to spawn children
+        self.assertEqual(control.get_status(), Control.RUNNING,
+                            f"{control.get_name()} not running.")
+        control.stop()
+        self.assertEqual(control.get_status(), Control.STOPPED,
+                            f"{control.get_name()} running.")
 
     def tearDown(self):
         """

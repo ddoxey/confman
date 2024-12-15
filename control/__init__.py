@@ -1,4 +1,4 @@
-from pprint import pprint
+from pprint import pformat
 import sys
 import os
 import time
@@ -25,22 +25,14 @@ class Control:
             ps_name : process table name (default to name)
             children : list of process table names for child processes
         """
-        self.name = process.get('name', None)
-        self.cmd = process.get('cmd', None)
-        if self.cmd is not None and len(self.cmd) > 0:
-            self.ex_name = self.cmd[0]
-            self.cmd = self.cmd[1:]
-        else:
-            self.ex_name = process.get('ex_name', self.name)
-            self.cmd = []
-        self.ps_name = process.get('ps_name', process.get('name', self.ex_name))
-        if self.name is None:
-            self.name = self.ex_name
-        self.children = process.get('children', [])
         self.cwd = process.get('cwd', None)
-
-        if self.ex_name is None:
-            raise ValueError(f'{__class__} requires process "name" property')
+        self.cmd = process.get('cmd', None)
+        self.start_cmd = process.get('start_cmd', self.cmd)
+        self.stop_cmd = process.get('stop_cmd', None)
+        self.name = process.get('name', None)
+        self.ex_name = process.get('ex_name', self.name)
+        self.ps_name = process.get('ps_name', None)
+        self.children = process.get('children', [])
 
         if self.cwd is not None:
             if not os.path.exists(self.cwd):
@@ -52,18 +44,87 @@ class Control:
                       file=sys.stderr, flush=True)
                 self.cwd = None
 
-        full_ex_path = None
+        if self.start_cmd is None or len(self.start_cmd) == 0:
+            self.start_cmd = self._make_start_cmd()
+        else:
+            self.start_cmd = self._validate_cmd(self.start_cmd)
+            self.ex_name = self.start_cmd[0]
+
+        if self.stop_cmd is not None:
+            self.stop_cmd = self._validate_cmd(self.stop_cmd)
+
+        if self.start_cmd is None:
+            raise ValueError(f'{__class__.__name__} unable to determine what to execute')
+        if self.ps_name is None:
+            self.ps_name = os.path.basename(self.ex_name)
+        if self.name is None:
+            self.name = self.ps_name
+        self.process = None
+
+    def _validate_cmd(self, cmd):
+        if cmd is None or len(cmd) == 0:
+            return None
+        ex_name = cmd[0]
+        ex_path = shutil.which(ex_name)
+        if ex_path is not None:
+            ex_path = ex_name
+        else:
+            cwd = os.getcwd() if self.cwd is None else self.cwd
+            ex_path = os.path.realpath(os.path.join(cwd, ex_name))
+            if os.path.exists(ex_path):
+                ex_path = os.path.join('.', os.path.basename(ex_path))
+        if ex_path is None:
+            print(f'Unable to locate executable: {ex_name}',
+                    file=sys.stderr, flush=True)
+            return None
+        cmd[0] = ex_path
+        return cmd
+
+    def _make_start_cmd(self):
+        """
+        This does the work of making a start command list suitable for passing
+        directly to subprocess.Popen(..)
+        """
+        if self.ex_name is None:
+            return None
+        ex_path = None
         if not os.path.exists(self.ex_name):
-            full_ex_path = shutil.which(self.ex_name)
-            if full_ex_path is None:
-                if self.cwd is not None:
-                    full_ex_path = os.path.realpath(os.path.join(self.cwd, self.ex_name))
-                    if os.path.exists(full_ex_path):
-                        self.ex_name = os.path.join('.', os.path.basename(full_ex_path))
-        if full_ex_path is None or not os.path.exists(full_ex_path):
+            ex_path = shutil.which(self.ex_name)
+            if ex_path is not None:
+                ex_path = self.ex_name
+            else:
+                cwd = os.getcwd() if self.cwd is None else self.cwd
+                ex_path = os.path.realpath(os.path.join(cwd, self.ex_name))
+                if os.path.exists(ex_path):
+                    self.ex_name = os.path.join('.', os.path.basename(ex_path))
+                    ex_path = self.ex_name
+        if ex_path is None:
             print(f'Unable to locate executable: {self.ex_name}',
                   file=sys.stderr, flush=True)
-        self.process = None
+            return None
+        return [ex_path]
+
+    def _run(self, cmd):
+        """
+        Run the given command list.
+        :return: True on success
+        """
+        try:
+#           print(f'_RUN {self.cwd}: {pformat(cmd)}')
+            self.process = subprocess.Popen(
+                cmd,
+                cwd=self.cwd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True  # Disown the process
+            )
+            # Squelch ResourceWarning warning on destruction
+            self.process.returncode = 0
+        except FileNotFoundError:
+            print(f"Error: Executable '{cmd[0]}' not found (cwd={self.cwd}).",
+                    file=sys.stderr, flush=True)
+            return False
+        return True
 
     def get_name(self):
         """
@@ -84,21 +145,11 @@ class Control:
         Ensure the process is disowned after spawning.
         """
         if self.get_status() == self.STOPPED:
-            cmd = [self.ex_name] + self.cmd
-            try:
-                self.process = subprocess.Popen(
-                    cmd,
-                    cwd=self.cwd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    start_new_session=True  # Disown the process
-                )
-                # Squelch ResourceWarning warning on destruction
-                self.process.returncode = 0
-            except FileNotFoundError:
-                print(f"Error: Executable '{self.ex_name}' not found.",
-                      file=sys.stderr, flush=True)
-                return self.STOPPED
+            self._run(self.start_cmd)
+        for check in range(3):
+            if self.get_status() == self.RUNNING:
+                return self.RUNNING
+            time.sleep(0.5)
         return self.get_status()
 
     def stop(self):
@@ -107,26 +158,33 @@ class Control:
         all of the children named in process configuration, in addition
         to processes appearing in the process table as children.
         """
-        ppids = self.get_pidof(self.ps_name)
-        named_cpids = self.get_pidof(self.children)
-        cpids = self.get_child_pids(list(set(ppids + named_cpids)))
-        pids = sorted(list(set(ppids + named_cpids + cpids)), key=int)
-        if len(pids) == 0:
-            return self.STOPPED
-        if len(ppids) > 0:
-            self.kill(ppids)
-            time.sleep(0.5)
-        if len(named_cpids) > 0:
-            self.kill(named_cpids)
-            time.sleep(0.5)
-        if len(cpids) > 0:
-            self.kill(cpids)
-            time.sleep(0.5)
-        for signal in ['-SIGTERM', '-SIGTERM', '-SIGKILL']:
-            if not self.any_alive(pids):
+        if self.stop_cmd is not None:
+            self._run(self.stop_cmd)
+            for check in range(3):
+                if self.get_status() == self.STOPPED:
+                    return self.STOPPED
+                time.sleep(0.5)
+        else:
+            ppids = self.get_pidof(self.ps_name)
+            named_cpids = self.get_pidof(self.children)
+            cpids = self.get_child_pids(list(set(ppids + named_cpids)))
+            pids = sorted(list(set(ppids + named_cpids + cpids)), key=int)
+            if len(pids) == 0:
                 return self.STOPPED
-            self.kill(pids, signal)
-            time.sleep(0.5)
+            if len(ppids) > 0:
+                self.kill(ppids)
+                time.sleep(0.5)
+            if len(named_cpids) > 0:
+                self.kill(named_cpids)
+                time.sleep(0.5)
+            if len(cpids) > 0:
+                self.kill(cpids)
+                time.sleep(0.5)
+            for signal in ['-SIGTERM', '-SIGTERM', '-SIGKILL']:
+                if not self.any_alive(pids):
+                    return self.STOPPED
+                self.kill(pids, signal)
+                time.sleep(0.5)
         return self.is_running()
 
     def get_status(self):
@@ -141,14 +199,22 @@ class Control:
         :return: RUNNING, JEOPARDY, STOPPED
         """
         pids = self.get_pidof(self.ps_name)
+#       print(f'{self.ps_name} pids: {pformat(pids)}',
+#             file=sys.stderr, flush=True)
         named_cpids = self.get_pidof(self.children)
+#       print(f'{self.children} pids: {pformat(named_cpids)}',
+#             file=sys.stderr, flush=True)
         if len(pids) == 0:
             if len(named_cpids) == 0:
+#               print('STOPPED', file=sys.stderr, flush=True)
                 return self.STOPPED
+#           print('JEOPARDY.1', file=sys.stderr, flush=True)
             return self.JEOPARDY
         if len(named_cpids) > 0:
             if len(self.children) != len(named_cpids):
+#               print('JEOPARDY.2', file=sys.stderr, flush=True)
                 return self.JEOPARDY
+#       print('RUNNING', file=sys.stderr, flush=True)
         return self.RUNNING
 
     def is_running(self):
