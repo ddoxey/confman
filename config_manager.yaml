@@ -8,15 +8,27 @@ biographic_config: "conf/biographic_data.json"
 
 processes:
     - name: sample_one
-      children: sample_one.1 sample_one.2 sample_one.3
+      children:
+        - sample_one.1
+        - sample_one.2
+        - sample_one.3
       cwd: tests
     - name: sample_two
       cwd: tests
     - name: sample_three
-      children: sample_three.1 sample_three.2 sample_three.3
+      children:
+        - sample_three.1
+        - sample_three.2
+        - sample_three.3
       cwd: tests
     - name: sample_four
       cwd: tests
-    - name: sample_five
-      children: sample_five.1 sample_five.2 sample_five.3
+    - name: Sample Five
+      ps_name: sample_five
+      start_cmd: ['runner.py', 'sample_five', 'start']
+      stop_cmd: ['runner.py', 'sample_five', 'stop']
+      children:
+        - sample_five.1
+        - sample_five.2
+        - sample_five.3
       cwd: tests

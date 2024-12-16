@@ -25,6 +25,9 @@ class Control:
             ps_name : process table name (default to name)
             children : list of process table names for child processes
         """
+        self.pidof_path = shutil.which('pidof')
+        self.kill_path = shutil.which('kill')
+        self.ps_path = shutil.which('ps')
         self.cwd = process.get('cwd', None)
         self.cmd = process.get('cmd', None)
         self.start_cmd = process.get('start_cmd', self.cmd)
@@ -33,6 +36,9 @@ class Control:
         self.ex_name = process.get('ex_name', self.name)
         self.ps_name = process.get('ps_name', None)
         self.children = process.get('children', [])
+
+        if isinstance(self.children, str):
+            self.children = self.children.strip().split()
 
         if self.cwd is not None:
             if not os.path.exists(self.cwd):
@@ -222,13 +228,13 @@ class Control:
         :return: list of one or more pids None.
         """
         if isinstance(ps_names, str):
-            ps_names = [ps_names]
+            ps_names = ps_names.split()
         pids = []
         try:
-            cmd = ['pidof', *ps_names]
+            cmd = [self.pidof_path, *ps_names]
             result = subprocess.check_output(cmd).strip()
-            pids = [pid.decode('utf-8') for pid in result.strip().split()]
-        except subprocess.CalledProcessError:
+            pids = result.decode('utf-8').strip().split()
+        except subprocess.CalledProcessError as pce:
             pass
         return pids
 
@@ -258,15 +264,16 @@ class Control:
             return child_pids
         ps_out = None
         try:
-            cmd = ['ps', 'ax', '-o', 'pid,ppid']
+            cmd = [self.ps_path, 'ax', '-o', 'pid,ppid']
             ps_out = subprocess.check_output(cmd)
         except subprocess.CalledProcessError:
             pass
         if ps_out is not None:
             for line in ps_out.decode('utf-8').split('\n'):
-                pid, ppid = line.split()
-                if ppid in pids:
-                    child_pids.append(pid)
+                if len(line.strip()) > 0:
+                    pid, ppid = line.split()
+                    if ppid in pids:
+                        child_pids.append(pid)
         return child_pids
 
     def get_defunct_pids(self, pids):
@@ -278,15 +285,16 @@ class Control:
             return defunct_pids
         ps_out = None
         try:
-            cmd = ['ps', 'ax', '-o', 'pid,command']
+            cmd = [self.ps_path, 'ax', '-o', 'pid,command']
             ps_out = subprocess.check_output(cmd)
         except subprocess.CalledProcessError:
             pass
         if ps_out is not None:
             for line in ps_out.decode('utf-8').split('\n'):
-                pid, command = line.split()
-                if pid in pids and '<defunc>' in command:
-                    defunct_pids.append(pid)
+                if len(line.strip()) > 0:
+                    pid, command = line.split()
+                    if pid in pids and '<defunc>' in command:
+                        defunct_pids.append(pid)
         return defunct_pids
 
     def any_alive(self, pids):
@@ -305,9 +313,9 @@ class Control:
         """
         status = 1
         if isinstance(pids, str):
-            pids = [pids]
+            pids = pids.split()
         try:
-            cmd = ['kill', signal, *pids]
+            cmd = [self.kill_path, signal, *pids]
             result = subprocess.run(
                 cmd,
                 stderr=subprocess.DEVNULL,
