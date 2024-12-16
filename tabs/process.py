@@ -80,8 +80,6 @@ class ProcessesTab(Gtk.Box):
         """
         status = control.get_status()
 
-        print(f'control({control.get_name()} status: {status}')
-
         # Set color based on status
         if status == Control.RUNNING:
             cr.set_source_rgb(0, 1, 0)  # Green
