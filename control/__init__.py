@@ -59,7 +59,6 @@ class Control:
             self.ps_name = os.path.basename(self.ex_name)
         if self.name is None:
             self.name = self.ps_name
-        self.process = None
 
     def _validate_cmd(self, cmd):
         if cmd is None or len(cmd) == 0:
@@ -109,21 +108,25 @@ class Control:
         Run the given command list.
         :return: True on success
         """
-        try:
-#           print(f'_RUN {self.cwd}: {pformat(cmd)}')
-            self.process = subprocess.Popen(
-                cmd,
-                cwd=self.cwd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True  # Disown the process
-            )
-            # Squelch ResourceWarning warning on destruction
-            self.process.returncode = 0
-        except FileNotFoundError:
-            print(f"Error: Executable '{cmd[0]}' not found (cwd={self.cwd}).",
-                    file=sys.stderr, flush=True)
-            return False
+        pid = os.fork()
+        if pid == 0:
+            # sacraficial child intermediate process
+            try:
+                process = subprocess.Popen(
+                    cmd,
+                    cwd=self.cwd,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True  # Disown the process
+                )
+                # Squelch ResourceWarning warning on destruction
+                process.returncode = 0
+            except FileNotFoundError:
+                print(f"Error: Executable '{cmd[0]}' not found (cwd={self.cwd}).",
+                        file=sys.stderr, flush=True)
+                os._exit(1)
+            os._exit(0)
         return True
 
     def get_name(self):
@@ -168,19 +171,16 @@ class Control:
             ppids = self.get_pidof(self.ps_name)
             named_cpids = self.get_pidof(self.children)
             cpids = self.get_child_pids(list(set(ppids + named_cpids)))
-            pids = sorted(list(set(ppids + named_cpids + cpids)), key=int)
+            child_pids = sorted(list(set(named_cpids + cpids)), key=int)
+            pids = sorted(list(set(ppids + child_pids)), key=int)
             if len(pids) == 0:
+                # nothing is running already
                 return self.STOPPED
+            if len(child_pids) > 0:
+                self.kill(child_pids)
             if len(ppids) > 0:
                 self.kill(ppids)
-                time.sleep(0.5)
-            if len(named_cpids) > 0:
-                self.kill(named_cpids)
-                time.sleep(0.5)
-            if len(cpids) > 0:
-                self.kill(cpids)
-                time.sleep(0.5)
-            for signal in ['-SIGTERM', '-SIGTERM', '-SIGKILL']:
+            for signal in ['-SIGTERM', '-SIGKILL', '-SIGKILL']:
                 if not self.any_alive(pids):
                     return self.STOPPED
                 self.kill(pids, signal)
@@ -199,22 +199,14 @@ class Control:
         :return: RUNNING, JEOPARDY, STOPPED
         """
         pids = self.get_pidof(self.ps_name)
-#       print(f'{self.ps_name} pids: {pformat(pids)}',
-#             file=sys.stderr, flush=True)
         named_cpids = self.get_pidof(self.children)
-#       print(f'{self.children} pids: {pformat(named_cpids)}',
-#             file=sys.stderr, flush=True)
         if len(pids) == 0:
             if len(named_cpids) == 0:
-#               print('STOPPED', file=sys.stderr, flush=True)
                 return self.STOPPED
-#           print('JEOPARDY.1', file=sys.stderr, flush=True)
             return self.JEOPARDY
         if len(named_cpids) > 0:
             if len(self.children) != len(named_cpids):
-#               print('JEOPARDY.2', file=sys.stderr, flush=True)
                 return self.JEOPARDY
-#       print('RUNNING', file=sys.stderr, flush=True)
         return self.RUNNING
 
     def is_running(self):

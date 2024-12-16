@@ -2,8 +2,12 @@
 Tests for the Control process controller class.
 """
 import os
+import sys
 import unittest
 from time import sleep
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from control import Control
 
 # Path to the directory containing the sample executables
