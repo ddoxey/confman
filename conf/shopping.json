@@ -1,0 +1,14 @@
+{
+    "Shopping List": {
+        "Eggs": 12,
+        "Cheese": "Jack",
+        "Beef": true,
+        "Water": false,
+        "Nuts": {
+            "Almonds": true,
+            "Peanuts": false,
+            "Macadamia": false,
+            "Pistacios": true
+        }
+    }
+}

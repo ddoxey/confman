@@ -35,16 +35,36 @@ class ConfigTab(Gtk.Box):
         save_button.connect("clicked", self.on_save_clicked)
         self.pack_start(save_button, expand=False, fill=False, padding=10)
 
+    def add_section_header(self, section_name, section_data):
+        """
+        Add a section header and render its fields.
+        """
+        # Section header (bold label)
+        header = Gtk.Label()
+        header.set_markup(f"<b>{section_name}</b>")
+        header.set_xalign(0)
+        self.entry_box.pack_start(header, expand=False, fill=True, padding=10)
+
+        # Render nested fields within the section
+        for key, value in section_data.items():
+            if isinstance(value, dict):
+                # Nested dictionary as expandable group
+                self.add_nested_dict_field(f"{section_name}.{key}", value)
+            elif isinstance(value, bool):
+                # Boolean switch for boolean fields
+                self.add_boolean_switch(self.entry_box, f"{section_name}.{key}", key, value)
+            else:
+                # Scalar fields
+                self.add_single_field(f"{section_name}.{key}", value)
+
     def add_config_field(self, key, value):
         """
         Add fields dynamically based on data type.
+        - Top-level keys act as section headers if the value is a dictionary.
         """
         if isinstance(value, dict):
-            # Boolean dictionary detection
-            if all(isinstance(v, bool) for v in value.values()):
-                self.add_boolean_dict_field(key, value)
-            else:
-                self.add_nested_dict_field(key, value)
+            # Render as a section header with nested fields
+            self.add_section_header(key, value)
         elif isinstance(value, list):
             self.add_list_field(key, value)
         else:
