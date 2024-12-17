@@ -6,7 +6,11 @@ yaml_config: "conf/data.yaml"
 
 biographic_config: "conf/biographic_data.json"
 
-shopping_list: "conf/shopping.json"
+# Shopping A
+json_shopping_list: "conf/shopping.json"
+
+# Shopping B
+ini_shopping_list: "conf/shopping.ini"
 
 processes:
     - name: sample_one
