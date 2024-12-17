@@ -76,26 +76,30 @@ class ConfigTab(Gtk.Box):
 
     def add_list_field(self, key, value_list):
         """
-        Render a list, such as "Work History" or Aliases.
+        Render a list, such as 'aliases' or 'skills'.
+        Handles lists of simple values and lists of single-key dictionaries.
         """
         expander = Gtk.Expander(label=key.title())
         list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
         for idx, item in enumerate(value_list):
             if isinstance(item, dict):
-                # Render lists of dictionaries as expandable sections
-                item_expander = Gtk.Expander(label=f"{key.title()} Entry {idx + 1}")
-                item_expander.set_expanded(True)
-
-                item_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+                # Handle list of single-key dictionaries (e.g., 'skills')
                 for sub_key, sub_value in item.items():
-                    self.add_field_to_container(item_box,
-                                                f"{key}[{idx}].{sub_key}",
-                                                sub_value)
-                item_expander.add(item_box)
-                list_box.pack_start(item_expander, expand=False, fill=True, padding=0)
+                    hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                    
+                    label = Gtk.Label(label=sub_key, xalign=0)
+                    switch = Gtk.Switch()
+                    switch.set_active(bool(sub_value))  # Set the boolean value
+                    
+                    hbox.pack_start(label, expand=False, fill=True, padding=0)
+                    hbox.pack_start(switch, expand=False, fill=True, padding=0)
+                    list_box.pack_start(hbox, expand=False, fill=True, padding=0)
+                    
+                    # Store the reference to the switch for saving later
+                    self.entries[f"{key}[{idx}].{sub_key}"] = switch
             else:
-                # Render simple lists as inline text fields
+                # Handle simple lists (e.g., 'aliases')
                 hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
                 label = Gtk.Label(label=f"{key.title()} [{idx}]", xalign=0)
                 entry = Gtk.Entry()
@@ -103,8 +107,6 @@ class ConfigTab(Gtk.Box):
                 hbox.pack_start(label, expand=False, fill=True, padding=0)
                 hbox.pack_start(entry, expand=True, fill=True, padding=0)
                 list_box.pack_start(hbox, expand=False, fill=True, padding=0)
-
-                # Store entry for later updates
                 self.entries[f"{key}[{idx}]"] = entry
 
         expander.add(list_box)
@@ -145,7 +147,7 @@ class ConfigTab(Gtk.Box):
 
     def on_save_clicked(self, widget):
         """
-        Save the updated configuration data.
+        Save the updated configuration back to the file, preserving nested structures.
         """
         def update_data(data, entries, prefix=""):
             if isinstance(data, dict):
@@ -153,12 +155,25 @@ class ConfigTab(Gtk.Box):
                     full_key = f"{prefix}.{key}" if prefix else key
                     if isinstance(value, (dict, list)):
                         update_data(value, entries, full_key)
-                    elif full_key in entries:
-                        data[key] = entries[full_key].get_text()
+                    else:
+                        # Handle simple fields
+                        entry_widget = entries.get(full_key)
+                        if entry_widget:
+                            data[key] = entry_widget.get_text()
             elif isinstance(data, list):
                 for idx, item in enumerate(data):
-                    update_data(item, entries, f"{prefix}[{idx}]")
+                    if isinstance(item, dict):
+                        for sub_key in item.keys():
+                            entry_key = f"{prefix}[{idx}].{sub_key}"
+                            switch_widget = entries.get(entry_key)
+                            if switch_widget:
+                                data[idx][sub_key] = switch_widget.get_active()
+                    else:
+                        entry_key = f"{prefix}[{idx}]"
+                        entry_widget = entries.get(entry_key)
+                        if entry_widget:
+                            data[idx] = entry_widget.get_text()
 
         update_data(self.data, self.entries)
         self.config.write(self.data)
-        print(f"Configuration saved to {self.config.get_filename()}")
+        print(f"Configuration saved to {self.config_file}")

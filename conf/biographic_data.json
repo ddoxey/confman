@@ -8,6 +8,43 @@
         "email": "john.doe@example.com",
         "phone": "(555) 619-1212"
     },
+    "aliases": [
+        "John Doe",
+        "Johnny",
+        "J.D."
+    ],
+    "skills": [
+        {
+            "HTML": true
+        },
+        {
+            "CSS": true
+        },
+        {
+            "JavaScript": true
+        },
+        {
+            "Python": true
+        },
+        {
+            "Project Management": false
+        },
+        {
+            "Public Speaking": false
+        },
+        {
+            "Data Analysis": true
+        },
+        {
+            "Leadership": false
+        },
+        {
+            "Git Version Control": true
+        },
+        {
+            "Customer Relations": false
+        }
+    ],
     "Work History": [
         {
             "employer_name": "Apple Inc.",
