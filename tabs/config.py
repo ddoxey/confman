@@ -1,179 +1,163 @@
-"""
-The ConfigTab class renders the configuration tab.
-"""
 import gi
-
 gi.require_version("Gtk", "3.0")
-
 from gi.repository import Gtk
 
 
 class ConfigTab(Gtk.Box):
-    """
-    Tab widget for editing a single configuration file.
-    Dynamically generates input fields based on the file structure.
-    """
-
-    def __init__(self, config_instance):
+    def __init__(self, config):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(20)
         self.set_margin_end(20)
         self.set_margin_top(20)
         self.set_margin_bottom(20)
 
-        self.config = config_instance
+        self.config = config
         self.data = self.config.read()
-        self.comments = self.config.get_comments()
+        self.entries = {}
 
-        # Create a scrollable container for dynamic fields
+        # Create a scrollable panel
         scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC,
-                                   Gtk.PolicyType.AUTOMATIC)
+        scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled_window.set_min_content_height(400)
 
-        # Main container for dynamic fields
-        self.entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
-                                 spacing=10)
+        # Container for dynamic fields
+        self.entry_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         scrolled_window.add(self.entry_box)
         self.pack_start(scrolled_window, expand=True, fill=True, padding=0)
 
-        # Generate UI fields
-        self.entries = {}
+        # Add dynamic entry fields
         for key, value in self.data.items():
             self.add_config_field(key, value)
 
-        # Add a Save button
+        # Save button
         save_button = Gtk.Button(label="Save")
         save_button.set_halign(Gtk.Align.CENTER)
-        save_button.set_valign(Gtk.Align.CENTER)
         save_button.connect("clicked", self.on_save_clicked)
         self.pack_start(save_button, expand=False, fill=False, padding=10)
 
     def add_config_field(self, key, value):
         """
-        Add a configuration field, handling nested dictionaries and lists.
+        Add fields dynamically based on data type.
         """
         if isinstance(value, dict):
-            self.add_nested_dict(key, value)
+            # Boolean dictionary detection
+            if all(isinstance(v, bool) for v in value.values()):
+                self.add_boolean_dict_field(key, value)
+            else:
+                self.add_nested_dict_field(key, value)
         elif isinstance(value, list):
             self.add_list_field(key, value)
         else:
             self.add_single_field(key, value)
 
-    def add_nested_dict(self, key, value):
+    def add_nested_dict_field(self, key, nested_dict):
         """
-        Render a dictionary as a collapsible section.
+        Add a nested dictionary as an expandable section.
         """
         expander = Gtk.Expander(label=key.title())
-        nested_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        group_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
-        for sub_key, sub_value in value.items():
-            self.add_field_to_container(nested_box,
-                                        f"{key}.{sub_key}", sub_value)
+        for sub_key, sub_value in nested_dict.items():
+            self.add_config_field(f"{key}.{sub_key}", sub_value)
 
-        expander.add(nested_box)
+        expander.add(group_box)
+        self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
+
+    def add_boolean_dict_field(self, key, boolean_dict):
+        """
+        Add a dictionary of boolean values with switches.
+        """
+        expander = Gtk.Expander(label=key.title())
+        boolean_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+
+        for sub_key, sub_value in boolean_dict.items():
+            self.add_boolean_switch(boolean_box, f"{key}.{sub_key}", sub_key, sub_value)
+
+        expander.add(boolean_box)
         self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
 
     def add_list_field(self, key, value_list):
         """
-        Render a list, such as 'aliases' or 'skills'.
-        Handles lists of simple values and lists of single-key dictionaries.
+        Add a list field with a dynamic '+' button for adding entries.
         """
         expander = Gtk.Expander(label=key.title())
         list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
+        # Function to add a new list entry dynamically
+        def add_list_entry(value=""):
+            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            entry = Gtk.Entry()
+            entry.set_text(str(value))
+            hbox.pack_start(entry, expand=True, fill=True, padding=0)
+            list_box.pack_start(hbox, expand=False, fill=True, padding=0)
+            self.entries[f"{key}[{len(self.entries)}]"] = entry
+            self.show_all()
+
+        # Populate existing list items
         for idx, item in enumerate(value_list):
-            if isinstance(item, dict):
-                # Handle list of single-key dictionaries (e.g., 'skills')
-                for sub_key, sub_value in item.items():
-                    hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-                    
-                    label = Gtk.Label(label=sub_key, xalign=0)
-                    switch = Gtk.Switch()
-                    switch.set_active(bool(sub_value))  # Set the boolean value
-                    
-                    hbox.pack_start(label, expand=False, fill=True, padding=0)
-                    hbox.pack_start(switch, expand=False, fill=True, padding=0)
-                    list_box.pack_start(hbox, expand=False, fill=True, padding=0)
-                    
-                    # Store the reference to the switch for saving later
-                    self.entries[f"{key}[{idx}].{sub_key}"] = switch
-            else:
-                # Handle simple lists (e.g., 'aliases')
-                hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-                label = Gtk.Label(label=f"{key.title()} [{idx}]", xalign=0)
-                entry = Gtk.Entry()
-                entry.set_text(str(item))
-                hbox.pack_start(label, expand=False, fill=True, padding=0)
-                hbox.pack_start(entry, expand=True, fill=True, padding=0)
-                list_box.pack_start(hbox, expand=False, fill=True, padding=0)
-                self.entries[f"{key}[{idx}]"] = entry
+            add_list_entry(item)
+
+        # Add '+' button
+        add_button = Gtk.Button(label="+")
+        add_button.connect("clicked", lambda btn: add_list_entry())
+        list_box.pack_start(add_button, expand=False, fill=False, padding=0)
 
         expander.add(list_box)
         self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
 
     def add_single_field(self, key, value):
         """
-        Add a single input field for scalar values.
+        Add a single key-value pair as an entry field.
         """
-        self.add_field_to_container(self.entry_box, key, value)
-
-    def add_field_to_container(self, container, key, value):
-        """
-        Helper function to add fields to a specific container.
-        """
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-
-        # Add comment header if available
-        if key in self.comments:
-            comment_label = Gtk.Label(label=self.comments[key])
-            comment_label.set_xalign(0)
-            comment_label.get_style_context().add_class("dim-label")
-            vbox.pack_start(comment_label, expand=False, fill=True, padding=0)
-
-        # Add input field
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        label = Gtk.Label(label=key.split(".")[-1].replace("_", " ").title(),
-                          xalign=0)
+        label = Gtk.Label(label=key.split(".")[-1].title(), xalign=0)
         entry = Gtk.Entry()
         entry.set_text(str(value))
         hbox.pack_start(label, expand=False, fill=True, padding=0)
         hbox.pack_start(entry, expand=True, fill=True, padding=0)
-        vbox.pack_start(hbox, expand=False, fill=True, padding=0)
-
-        # Store entry for later use
+        self.entry_box.pack_start(hbox, expand=False, fill=True, padding=0)
         self.entries[key] = entry
-        container.pack_start(vbox, expand=False, fill=True, padding=0)
+
+    def add_boolean_switch(self, container, key, label_text, value):
+        """
+        Helper to add a boolean switch with a label.
+        """
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        label = Gtk.Label(label=label_text, xalign=0)
+        switch = Gtk.Switch()
+        switch.set_active(bool(value))
+
+        hbox.pack_start(label, expand=False, fill=True, padding=0)
+        hbox.pack_start(switch, expand=False, fill=True, padding=0)
+        container.pack_start(hbox, expand=False, fill=True, padding=0)
+
+        # Store reference for saving
+        self.entries[key] = switch
 
     def on_save_clicked(self, widget):
         """
-        Save the updated configuration back to the file, preserving nested structures.
+        Save updated data to the configuration file.
         """
         def update_data(data, entries, prefix=""):
             if isinstance(data, dict):
                 for key, value in data.items():
                     full_key = f"{prefix}.{key}" if prefix else key
-                    if isinstance(value, (dict, list)):
+                    if isinstance(value, dict) or isinstance(value, list):
                         update_data(value, entries, full_key)
                     else:
-                        # Handle simple fields
-                        entry_widget = entries.get(full_key)
-                        if entry_widget:
-                            data[key] = entry_widget.get_text()
+                        widget = entries.get(full_key)
+                        if widget:
+                            if isinstance(widget, Gtk.Switch):
+                                data[key] = widget.get_active()
+                            else:
+                                data[key] = widget.get_text()
             elif isinstance(data, list):
                 for idx, item in enumerate(data):
-                    if isinstance(item, dict):
-                        for sub_key in item.keys():
-                            entry_key = f"{prefix}[{idx}].{sub_key}"
-                            switch_widget = entries.get(entry_key)
-                            if switch_widget:
-                                data[idx][sub_key] = switch_widget.get_active()
-                    else:
-                        entry_key = f"{prefix}[{idx}]"
-                        entry_widget = entries.get(entry_key)
-                        if entry_widget:
-                            data[idx] = entry_widget.get_text()
+                    full_key = f"{prefix}[{idx}]"
+                    widget = entries.get(full_key)
+                    if widget:
+                        data[idx] = widget.get_text()
 
         update_data(self.data, self.entries)
         self.config.write(self.data)
-        print(f"Configuration saved to {self.config_file}")
+        print(f"Configuration saved to {self.config.file_path}")
