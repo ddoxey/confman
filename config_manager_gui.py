@@ -64,6 +64,9 @@ class ConfigManagerApp(Gtk.Window):
             del entries['processes']
 
         for field_name, value in entries.items():
+            if field_name.endswith('_apply'):
+                continue
+            apply_config = entries.get(f'{field_name}_apply', None)
             # Determine tab label
             tab_label = self.manager_config.get_comment(field_name)
             if len(tab_label) == 0:
@@ -78,7 +81,7 @@ class ConfigManagerApp(Gtk.Window):
                     tab_label = field_name.replace('_', ' ').title()
 
             # Add ConfigTab for other configurations
-            self.notebook.append_page(ConfigTab(Config(value)),
+            self.notebook.append_page(ConfigTab(Config(value), apply_config),
                                       Gtk.Label(label=tab_label))
 
 

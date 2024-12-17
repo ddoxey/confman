@@ -112,6 +112,7 @@ class Control:
     def _run(self, cmd):
         """
         Run the given command list.
+        Ensure the process is disowned after spawning.
         :return: True on success
         """
         pid = os.fork()
@@ -148,10 +149,15 @@ class Control:
         """
         return getattr(self, prop, None)
 
+    def run(self):
+        """
+        Run the process in fire and forget mode.
+        """
+        return self._run(self.start_cmd)
+
     def start(self):
         """
         Start the process if it is not already running.
-        Ensure the process is disowned after spawning.
         """
         if self.get_status() == self.STOPPED:
             self._run(self.start_cmd)
