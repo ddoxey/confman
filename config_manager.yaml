@@ -6,6 +6,8 @@ yaml_config: "conf/data.yaml"
 
 biographic_config: "conf/biographic_data.json"
 
+shopping_list: "conf/shopping.json"
+
 processes:
     - name: sample_one
       children:

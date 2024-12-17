@@ -72,28 +72,23 @@ class ConfigTab(Gtk.Box):
 
     def add_nested_dict_field(self, key, nested_dict):
         """
-        Add a nested dictionary as an expandable section.
+        Add a nested dictionary as an expandable section with the header at the top.
         """
-        expander = Gtk.Expander(label=key.title())
+        # Create an expandable section
+        expander = Gtk.Expander(label=key.split(".")[-1].title())  # Header derived from key
         group_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
+        # Add fields inside the expandable section
         for sub_key, sub_value in nested_dict.items():
-            self.add_config_field(f"{key}.{sub_key}", sub_value)
+            if isinstance(sub_value, bool):
+                # Boolean switch
+                self.add_boolean_switch(group_box, f"{key}.{sub_key}", sub_key, sub_value)
+            else:
+                # Scalar fields
+                self.add_single_field(f"{key}.{sub_key}", sub_value)
 
+        # Attach the expandable group to the main UI container
         expander.add(group_box)
-        self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
-
-    def add_boolean_dict_field(self, key, boolean_dict):
-        """
-        Add a dictionary of boolean values with switches.
-        """
-        expander = Gtk.Expander(label=key.title())
-        boolean_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-
-        for sub_key, sub_value in boolean_dict.items():
-            self.add_boolean_switch(boolean_box, f"{key}.{sub_key}", sub_key, sub_value)
-
-        expander.add(boolean_box)
         self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
 
     def add_list_field(self, key, value_list):
