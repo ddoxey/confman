@@ -67,18 +67,24 @@ class Config:
         """
         if self.file_type == 'json':
             with open(self.file_path, 'w', encoding='utf8') as file:
-                json.dump(data, file, indent=4)
+                json.dump(data, file, indent=4, ensure_ascii=False)
         elif self.file_type == 'yaml':
             yaml_lines = []
             for key, value in data.items():
-                serialized_value = yaml.dump({key: value},
-                                             default_flow_style=False).strip()
+                if isinstance(value, list):
+                    # Special handling for lists to preserve formatting
+                    serialized_value = yaml.dump(
+                        {key: value}, default_flow_style=False).strip()
+                else:
+                    serialized_value = yaml.dump(
+                        {key: value}, default_flow_style=False).strip()
                 yaml_lines.append(serialized_value)
 
             yaml_content = '\n'.join(yaml_lines)
             final_content = self._restore_comments(yaml_content)
             with open(self.file_path, 'w', encoding='utf8') as file:
                 file.write(final_content)
+
 
     def get_comments(self):
         """

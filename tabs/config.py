@@ -76,31 +76,36 @@ class ConfigTab(Gtk.Box):
 
     def add_list_field(self, key, value_list):
         """
-        Render a list, such as "Work History".
+        Render a list, such as "Work History" or Aliases.
         """
         expander = Gtk.Expander(label=key.title())
         list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
         for idx, item in enumerate(value_list):
             if isinstance(item, dict):
+                # Render lists of dictionaries as expandable sections
                 item_expander = Gtk.Expander(label=f"{key.title()} Entry {idx + 1}")
                 item_expander.set_expanded(True)
 
-                item_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
-                                   spacing=6)
+                item_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
                 for sub_key, sub_value in item.items():
                     self.add_field_to_container(item_box,
                                                 f"{key}[{idx}].{sub_key}",
                                                 sub_value)
-
                 item_expander.add(item_box)
-                list_box.pack_start(item_expander,
-                                    expand=False,
-                                    fill=True,
-                                    padding=0)
+                list_box.pack_start(item_expander, expand=False, fill=True, padding=0)
             else:
-                self.add_field_to_container(list_box,
-                                            f"{key}[{idx}]", item)
+                # Render simple lists as inline text fields
+                hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                label = Gtk.Label(label=f"{key.title()} [{idx}]", xalign=0)
+                entry = Gtk.Entry()
+                entry.set_text(str(item))
+                hbox.pack_start(label, expand=False, fill=True, padding=0)
+                hbox.pack_start(entry, expand=True, fill=True, padding=0)
+                list_box.pack_start(hbox, expand=False, fill=True, padding=0)
+
+                # Store entry for later updates
+                self.entries[f"{key}[{idx}]"] = entry
 
         expander.add(list_box)
         self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
