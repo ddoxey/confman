@@ -2,7 +2,7 @@
 json_config: "conf/data.json"
 
 # YAML Configuration
-yaml_config: "conf/data.yaml"
+yaml_config: "{PWD}/conf/data.yaml"
 yaml_config_apply:
     cmd: ['runner.py', 'sample_five', 'start']
     cwd: tests

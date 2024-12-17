@@ -15,7 +15,7 @@ class Config:
         Initialize the Config class with a file path.
         :param file_path: Path to the configuration file.
         """
-        self.file_path = file_path
+        self.file_path = self.resolve_env_variables(file_path)
         self.file_type = self._detect_file_type()
         self.comments = {}
 
@@ -145,3 +145,16 @@ class Config:
         if final_lines and not final_lines[-1].strip():
             final_lines.pop()
         return '\n'.join(final_lines)
+
+    @staticmethod
+    def resolve_env_variables(input_string):
+        """
+        Resolve environment variables in a string. Replaces {VAR_NAME} with the value of os.environ['VAR_NAME'].
+        :param input_string: The input string with potential environment variable placeholders.
+        :return: The string with environment variables resolved.
+        """
+        pattern = re.compile(r'\{(\w+)\}')
+        def replace_match(match):
+            var_name = match.group(1)
+            return os.environ.get(var_name, f'{{{var_name}}}')  # Keep original if not found
+        return pattern.sub(replace_match, input_string)
