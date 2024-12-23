@@ -1,20 +1,46 @@
-/* Tab styling */
-.notebook tab {
-    background-color: #e0e0e0;
-    border: 1px solid #b0b0b0;
+window {
+    background-color: #800000;
+    color: #cccccc;
+}
+* {
+    background-color: inherit;
+    color: inherit;
+}
+
+tab {
+    color: #eeeeee;
+    background-color: #822222;
     border-radius: 8px 8px 0 0;
     margin: 2px;
     padding: 5px;
 }
-
-/* Active tab styling */
-.notebook tab:active {
-    background-color: #ffffff;
-    border: 1px solid #808080;
+tab:checked {
+    background-color: #eeeeee;
+    border-width: 1px 2px 0px 1px;
+    border-style: solid;
+    border-color: #eeeeee #222222 #eeeeee #eeeeee;
+}
+tab:checked label {
+    color: #222222;
 }
 
-/* Hover effect */
-.notebook tab:hover {
-    background-color: #d0d0d0;
-    border-color: #a0a0a0;
+button {
+    background: inherit;
+    border: 1px solid #eeeeee;
+    border-radius: 8px;
 }
+
+label {
+    color: #ffffff;
+    font-weight: bold;
+}
+
+entry {
+    background-color: inherit;
+    color: inherit;
+    border-radius: 4px;
+    padding: 4px;
+    box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.2),
+                inset 1px -1px 2px rgba(255, 255, 255, 0.8);
+}
+
