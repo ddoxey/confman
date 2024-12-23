@@ -1,10 +1,11 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+from control import Control
 
 
 class ConfigTab(Gtk.Box):
-    def __init__(self, config):
+    def __init__(self, config, apply_config=None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.set_margin_start(20)
         self.set_margin_end(20)
@@ -12,6 +13,7 @@ class ConfigTab(Gtk.Box):
         self.set_margin_bottom(20)
 
         self.config = config
+        self.apply_config = apply_config
         self.data = self.config.read()
         self.entries = {}
 
@@ -29,11 +31,22 @@ class ConfigTab(Gtk.Box):
         for key, value in self.data.items():
             self.add_config_field(key, value)
 
+        # Buttons: Save and optionally Apply
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+
         # Save button
         save_button = Gtk.Button(label="Save")
         save_button.set_halign(Gtk.Align.CENTER)
         save_button.connect("clicked", self.on_save_clicked)
-        self.pack_start(save_button, expand=False, fill=False, padding=10)
+        button_box.pack_start(save_button, expand=False, fill=False, padding=10)
+
+        if self.apply_config is not None:
+            apply_button = Gtk.Button(label="Apply")
+            apply_button.set_halign(Gtk.Align.CENTER)
+            apply_button.connect("clicked", self.on_apply_clicked)
+            button_box.pack_start(apply_button, expand=False, fill=True, padding=0)
+
+        self.pack_start(button_box, expand=False, fill=False, padding=10)        
 
     def add_section_header(self, section_name, section_data):
         """
@@ -72,28 +85,23 @@ class ConfigTab(Gtk.Box):
 
     def add_nested_dict_field(self, key, nested_dict):
         """
-        Add a nested dictionary as an expandable section.
+        Add a nested dictionary as an expandable section with the header at the top.
         """
-        expander = Gtk.Expander(label=key.title())
+        # Create an expandable section
+        expander = Gtk.Expander(label=key.split(".")[-1].title())  # Header derived from key
         group_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
 
+        # Add fields inside the expandable section
         for sub_key, sub_value in nested_dict.items():
-            self.add_config_field(f"{key}.{sub_key}", sub_value)
+            if isinstance(sub_value, bool):
+                # Boolean switch
+                self.add_boolean_switch(group_box, f"{key}.{sub_key}", sub_key, sub_value)
+            else:
+                # Scalar fields
+                self.add_single_field(f"{key}.{sub_key}", sub_value)
 
+        # Attach the expandable group to the main UI container
         expander.add(group_box)
-        self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
-
-    def add_boolean_dict_field(self, key, boolean_dict):
-        """
-        Add a dictionary of boolean values with switches.
-        """
-        expander = Gtk.Expander(label=key.title())
-        boolean_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-
-        for sub_key, sub_value in boolean_dict.items():
-            self.add_boolean_switch(boolean_box, f"{key}.{sub_key}", sub_key, sub_value)
-
-        expander.add(boolean_box)
         self.entry_box.pack_start(expander, expand=False, fill=True, padding=0)
 
     def add_list_field(self, key, value_list):
@@ -181,3 +189,9 @@ class ConfigTab(Gtk.Box):
         update_data(self.data, self.entries)
         self.config.write(self.data)
         print(f"Configuration saved to {self.config.file_path}")
+
+    def on_apply_clicked(self, widget):
+        """ Execute the 'Apply' command. """
+        if self.apply_config is not None:
+            control = Control(self.apply_config)
+            control.run()

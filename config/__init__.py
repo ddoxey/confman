@@ -1,9 +1,11 @@
 """
-The Config class reads & writes JSON and YAML files.
+The Config class reads & writes JSON, INI, and YAML files.
 """
+import os
 import re
 import json
 import yaml
+import configparser
 from collections import OrderedDict
 
 
@@ -13,7 +15,7 @@ class Config:
         Initialize the Config class with a file path.
         :param file_path: Path to the configuration file.
         """
-        self.file_path = file_path
+        self.file_path = self.resolve_env_variables(file_path)
         self.file_type = self._detect_file_type()
         self.comments = {}
 
@@ -25,22 +27,22 @@ class Config:
 
     def _detect_file_type(self) -> str:
         """
-        Detect the file type (JSON or YAML) based on the file extension.
-        :return: 'json' or 'yaml'
+        Detect the file type (JSON, YAML, or INI) based on the file extension.
+        :return: 'json', 'yaml', or 'ini'
         :raises ValueError: If the file extension is not supported.
         """
         if self.file_path.endswith('.json'):
             return 'json'
         if self.file_path.endswith(('.yaml', '.yml')):
             return 'yaml'
+        if self.file_path.endswith('.ini'):
+            return 'ini'
         ext = self.file_path.split('.')[-1]
         raise ValueError(f'Unsupported file type: {ext}')
 
     def read(self):
         """
         Read the configuration file and return its content as an OrderedDict.
-        For YAML, comments are captured and stored separately.
-        :return: OrderedDict representing the content of the file.
         """
         if self.file_type == 'json':
             with open(self.file_path, 'r', encoding='utf8') as file:
@@ -50,34 +52,30 @@ class Config:
             with open(self.file_path, 'r', encoding='utf8') as file:
                 raw_lines = file.readlines()
 
-            # Extract comments and load YAML data
             self._extract_comments(raw_lines)
-            yaml_content = '\n'.join(line for line in raw_lines
-                                     if not line.strip().startswith('#'))
+            yaml_content = '\n'.join(line for line in raw_lines if not line.strip().startswith('#'))
             return yaml.load(yaml_content, Loader=yaml.SafeLoader)
+
+        if self.file_type == 'ini':
+            parser = configparser.ConfigParser()
+            parser.read(self.file_path, encoding='utf8')
+            return OrderedDict({section: dict(parser.items(section)) for section in parser.sections()})
 
         return None
 
     def write(self, data):
         """
-        Write the given data to the configuration file in the same order it
-        was read.
-        For YAML, comments are restored during writing.
+        Write the given data to the configuration file.
         :param data: OrderedDict to be serialized and written to the file.
         """
         if self.file_type == 'json':
             with open(self.file_path, 'w', encoding='utf8') as file:
                 json.dump(data, file, indent=4, ensure_ascii=False)
+
         elif self.file_type == 'yaml':
             yaml_lines = []
             for key, value in data.items():
-                if isinstance(value, list):
-                    # Special handling for lists to preserve formatting
-                    serialized_value = yaml.dump(
-                        {key: value}, default_flow_style=False).strip()
-                else:
-                    serialized_value = yaml.dump(
-                        {key: value}, default_flow_style=False).strip()
+                serialized_value = yaml.dump({key: value}, default_flow_style=False).strip()
                 yaml_lines.append(serialized_value)
 
             yaml_content = '\n'.join(yaml_lines)
@@ -85,6 +83,12 @@ class Config:
             with open(self.file_path, 'w', encoding='utf8') as file:
                 file.write(final_content)
 
+        elif self.file_type == 'ini':
+            parser = configparser.ConfigParser()
+            for section, values in data.items():
+                parser[section] = values
+            with open(self.file_path, 'w', encoding='utf8') as file:
+                parser.write(file)
 
     def get_comments(self):
         """
@@ -100,8 +104,7 @@ class Config:
 
     def _extract_comments(self, raw_lines):
         """
-        Extract comments from YAML lines and store them, including multi-line
-        and inline comments.
+        Extract comments from YAML lines and store them.
         :param raw_lines: List of lines from the YAML file.
         """
         self.comments = {}
@@ -116,17 +119,13 @@ class Config:
                     if current_comment_lines:
                         self.comments[key] = '\n'.join(current_comment_lines)
                         current_comment_lines = []
-                    # Check for inline comments
                     if '#' in line:
                         inline_comment = line.split('#', 1)[1].strip()
                         self.comments[key] = f'{self.comments.get(key, "")}\n{inline_comment}'.strip()
 
     def _restore_comments(self, yaml_content):
         """
-        Restore comments into the YAML content during writing, preserving
-        order, inline comments, and adding blank lines between entries.
-        :param yaml_content: Serialized YAML string without comments.
-        :return: YAML string with comments restored.
+        Restore comments into the YAML content during writing.
         """
         yaml_lines = yaml_content.splitlines()
         final_lines = []
@@ -135,22 +134,27 @@ class Config:
             if key_match:
                 key = key_match.group(1)
                 if key in self.comments:
-                    # Add multi-line comments before the key
-                    comment_lines = [
-                        f'# {comment}'
-                        for comment in self.comments[key].split('\n')
-                        if not comment.startswith('#')
-                    ]
+                    comment_lines = [f'# {comment}' for comment in self.comments[key].split('\n')]
                     if '\n' in self.comments[key]:
                         final_lines.extend(comment_lines)
                     else:
-                        # Inline comment: Append to the same line
                         line += f'  # {self.comments[key]}'
             final_lines.append(line)
-            # Add a blank line after each key-value pair
             if key_match:
                 final_lines.append('')
-        # Remove trailing blank line
         if final_lines and not final_lines[-1].strip():
             final_lines.pop()
         return '\n'.join(final_lines)
+
+    @staticmethod
+    def resolve_env_variables(input_string):
+        """
+        Resolve environment variables in a string. Replaces {VAR_NAME} with the value of os.environ['VAR_NAME'].
+        :param input_string: The input string with potential environment variable placeholders.
+        :return: The string with environment variables resolved.
+        """
+        pattern = re.compile(r'\{(\w+)\}')
+        def replace_match(match):
+            var_name = match.group(1)
+            return os.environ.get(var_name, f'{{{var_name}}}')  # Keep original if not found
+        return pattern.sub(replace_match, input_string)

@@ -2,9 +2,18 @@
 json_config: "conf/data.json"
 
 # YAML Configuration
-yaml_config: "conf/data.yaml"
+yaml_config: "{PWD}/conf/data.yaml"
+yaml_config_apply:
+    cmd: ['runner.py', 'sample_five', 'start']
+    cwd: tests
 
 biographic_config: "conf/biographic_data.json"
+
+# Shopping A
+json_shopping_list: "conf/shopping.json"
+
+# Shopping B
+ini_shopping_list: "conf/shopping.ini"
 
 processes:
     - name: sample_one
